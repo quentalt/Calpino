@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useSnackbar } from 'notistack';
-import {MyAppBar} from './components/AppBar';
 import {SearchBar} from './components/SearchBar';
 import { Note } from './types/note';
 import { saveNotes, loadNotes, sortNotesByDate } from './utils/localStorage';
@@ -18,10 +17,13 @@ import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import AddIcon from '@mui/icons-material/Add';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { styled, useTheme } from '@mui/material/styles';
-import { MarkdownEditor} from './components/MardownEditor';
-import { MarkdownPreview } from './components/MardownPreview';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import { MarkdownEditor } from './components/MardownEditor';
+import { MarkdownPreview } from './components/MardownPreview';
+import { MyAppBar } from './components/AppBar';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -35,18 +37,18 @@ interface ConfirmDialogProps {
 const drawerWidth = 300;
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{ open?: boolean }>(
-  ({ theme, open }) => ({
+  ({ open }) => ({
     flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
+    padding: useTheme().spacing(3),
+    transition: useTheme().transitions.create('margin', {
+      easing: useTheme().transitions.easing.sharp,
+      duration: useTheme().transitions.duration.leavingScreen,
     }),
     marginLeft: `-${drawerWidth}px`,
     ...(open && {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
+      transition: useTheme().transitions.create('margin', {
+        easing: useTheme().transitions.easing.easeOut,
+        duration: useTheme().transitions.duration.enteringScreen,
       }),
       marginLeft: 0,
     }),
@@ -54,12 +56,13 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{ 
 );
 
 export default function Home() {
-  const theme = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(true);  
+
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
@@ -126,46 +129,53 @@ export default function Home() {
     setSelectedNote({ id: uuidv4(), content: '', date: new Date().toISOString(), category: '', tags: [] });
   };
 
+  const handleDrawerToggle = () => {
+    setDrawerOpen(!drawerOpen);
+  };
   const filteredNotes = notes.filter(note => note.content.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <>
-      <MyAppBar />
+    <MyAppBar onDrawerToggle={handleDrawerToggle} />
       <Drawer
-        variant="permanent"
+        variant="persistent"
         anchor="left"
+        open={drawerOpen}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+          '& .MuiDrawer-paper': { width: drawerWidth },
         }}
       >
-        <Box sx={{ overflow: 'auto' }}>
-          <List>
-            <ListItem button onClick={handleNewNote}>
-              <ListItemIcon><AddIcon /></ListItemIcon>
-              <ListItemText primary="New Note" />
-            </ListItem>
-          </List>
-          <Divider />
-          <List>
-            {filteredNotes.map(note => (
-              <ListItem key={note.id} button onClick={() => handleSelectNote(note)}>
-                <ListItemText 
-                  primary={note.content.slice(0, 20) + '...'} 
-                  secondary={`${note.category} | ${new Date(note.date).toLocaleString()}`} 
-                />
-                <IconButton edge="end" aria-label="delete" onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}>
-                  <DeleteIcon />
-                </IconButton>
-              </ListItem>
-            ))}
-          </List>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', p: 1 }}>
+          <IconButton onClick={handleDrawerToggle}>
+            {drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+          </IconButton>
         </Box>
+        <Divider />
+        <List>
+          <ListItem button onClick={handleNewNote}>
+            <ListItemIcon>
+              <AddIcon />
+            </ListItemIcon>
+            <ListItemText primary="New Note" />
+          </ListItem>
+          <Divider />
+          {filteredNotes.map(note => (
+            <ListItem key={note.id} button onClick={() => handleSelectNote(note)}>
+              <ListItemText primary={note.content.split('\n')[0]} />
+              <IconButton onClick={() => handleDeleteNote(note.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </ListItem>
+          ))}
+        </List>
       </Drawer>
-      <Main open={selectedNote !== null}>
-        <Container>
-          <Typography variant="h4" sx={{ mt: 2, mb: 4 }}>Notes</Typography>
+      
+    
+      <Main open={selectedNote !== null} sx={{ m: 4 }}> 
+    <Container>
+        <Typography variant="h4" sx={{ my: 2 }}> Notes</Typography>
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           <MarkdownEditor
             content={selectedNote?.content || ''}
@@ -175,7 +185,7 @@ export default function Home() {
             tags={selectedNote?.tags || []}
             setTags={(tags: string[]) => setSelectedNote((prev: any) => prev ? { ...prev, tags } : null)}
           />
-          <MarkdownPreview content={selectedNote?.content || ''} />
+        <MarkdownPreview content={selectedNote?.content || ''} />
           <Divider sx={{ my: 2 }} />
           <Button variant="contained" color="primary" onClick={handleSaveNote} sx={{ mb: 2 }}>Save</Button>
         </Container>

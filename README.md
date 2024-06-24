@@ -1,11 +1,10 @@
 Welcome to my Calpino note-taking app! This app is designed to help you easily take and organize notes on your computer (soon mobile device). Here's a quick overview of the app's features:
 
-    Note creation: You can create new notes by clicking the "New Note" button or pressing the "N" key on your keyboard.
+* Note creation: You can create new notes by clicking the "New Note" button or pressing the "N" key on your keyboard.
 
-    Note editing: To edit an existing note, simply click on it in the list of notes. You can also use the search bar to quickly find a specific note.
+* Note editing: To edit an existing note, simply click on it in the list of notes. You can also use the search bar to quickly find a specific note.
 
-
-    Note formatting: You can format your notes using basic text formatting tools, such as bold, italic, and underline. You can also insert images and attachments.
+* Note formatting: You can format your notes using basic text formatting tools, such as bold, italic, and underline. You can also insert images and attachments.
 
 
 Soon : 

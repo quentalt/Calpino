@@ -5,7 +5,8 @@ import Chip from '@mui/material/Chip';
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
-import { Note } from '../types/note';
+import CloseIcon from '@mui/icons-material/Close';
+import EmojiPicker from 'emoji-picker-react';
 
 interface MarkdownEditorProps {
   content: string;
@@ -25,7 +26,9 @@ export const MarkdownEditor = ({
   setTags,
 }: MarkdownEditorProps) => {
   const [tagInput, setTagInput] = useState('');
+  const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
 
+  
   const handleDeleteTag = (tagToDelete: string) => {
     setTags(tags.filter(tag => tag !== tagToDelete));
   };
@@ -41,7 +44,7 @@ const handleAddTag = () => {
   return (
     <Box>
       <TextField
-        label="Category"
+        label="Titre"
         variant="outlined"
         fullWidth
         value={category}
@@ -76,16 +79,32 @@ const handleAddTag = () => {
         ))}
       </Box>
       <TextField
-        label="Content"
-        multiline
-        rows={20}
+        label="Contenu" 
         variant="outlined"
         fullWidth
+        multiline
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        sx={{ backgroundColor: '#ffffff', borderRadius: '4px' }}
+        sx={{ mb: 2 }}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton onClick={() => setEmojiPickerVisible(!emojiPickerVisible)}>
+              {emojiPickerVisible ? <CloseIcon /> : <AddIcon />} 
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
       />
+      <Box>
+        {emojiPickerVisible && (
+          <Box sx={{ position: 'absolute', zIndex: 1 }}>
+            <EmojiPicker onEmojiClick={(emoji) => setContent(content + emoji.emoji)} />
+          </Box>
+        )}
+      </Box>
     </Box>
+
   );
 };
 
