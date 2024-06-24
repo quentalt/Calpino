@@ -1,118 +1,195 @@
-import Image from "next/image";
-import { Inter } from "next/font/google";
+import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { useSnackbar } from 'notistack';
+import {MyAppBar} from './components/AppBar';
+import {SearchBar} from './components/SearchBar';
+import { Note } from './types/note';
+import { saveNotes, loadNotes, sortNotesByDate } from './utils/localStorage';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import Divider from '@mui/material/Divider';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import AddIcon from '@mui/icons-material/Add';
+import { styled, useTheme } from '@mui/material/styles';
+import { MarkdownEditor} from './components/MardownEditor';
+import { MarkdownPreview } from './components/MardownPreview';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 
-const inter = Inter({ subsets: ["latin"] });
+interface ConfirmDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  content: string;
+}
+
+
+const drawerWidth = 300;
+
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{ open?: boolean }>(
+  ({ theme, open }) => ({
+    flexGrow: 1,
+    padding: theme.spacing(3),
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginLeft: `-${drawerWidth}px`,
+    ...(open && {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: 0,
+    }),
+  }),
+);
 
 export default function Home() {
+  const theme = useTheme();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    const savedNotes = loadNotes();
+    setNotes(sortNotesByDate(savedNotes));
+  }, []);
+
+  useEffect(() => {
+    saveNotes(notes);
+  }, [notes]);
+
+  const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ open, onClose, onConfirm, title, content }) => (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent>
+        <DialogContentText>{content}</DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="primary">
+          Cancel
+        </Button>
+        <Button onClick={onConfirm} color="secondary" autoFocus>
+          Confirm
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+  
+  const handleSaveNote = () => {
+    if (selectedNote) {
+      setSelectedNote((prev: any) => prev ? { ...prev, date: new Date().toISOString() } : null);
+      const noteIndex = notes.findIndex(note => note.id === selectedNote.id);
+      if (noteIndex === -1) {
+        setNotes([...notes, selectedNote]);
+      } else {
+        const updatedNotes = [...notes];
+        updatedNotes[noteIndex] = selectedNote;
+        setNotes(updatedNotes);
+      }
+      enqueueSnackbar('Note saved successfully', { variant: 'success' });
+    }
+  }
+
+
+  const handleSelectNote = (note: Note) => {
+    setSelectedNote(note);
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+    setNoteToDelete(noteId);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmDeleteNote = () => {
+    if (noteToDelete) {
+      setNotes(prevNotes => prevNotes.filter(note => note.id !== noteToDelete));
+      setNoteToDelete(null);
+      enqueueSnackbar('Note deleted successfully', { variant: 'error' });
+    }
+    setConfirmDialogOpen(false);
+  };
+
+  const handleNewNote = () => {
+    setSelectedNote({ id: uuidv4(), content: '', date: new Date().toISOString(), category: '', tags: [] });
+  };
+
+  const filteredNotes = notes.filter(note => note.content.toLowerCase().includes(searchQuery.toLowerCase()));
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <>
+      <MyAppBar />
+      <Drawer
+        variant="permanent"
+        anchor="left"
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+        }}
+      >
+        <Box sx={{ overflow: 'auto' }}>
+          <List>
+            <ListItem button onClick={handleNewNote}>
+              <ListItemIcon><AddIcon /></ListItemIcon>
+              <ListItemText primary="New Note" />
+            </ListItem>
+          </List>
+          <Divider />
+          <List>
+            {filteredNotes.map(note => (
+              <ListItem key={note.id} button onClick={() => handleSelectNote(note)}>
+                <ListItemText 
+                  primary={note.content.slice(0, 20) + '...'} 
+                  secondary={`${note.category} | ${new Date(note.date).toLocaleString()}`} 
+                />
+                <IconButton edge="end" aria-label="delete" onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}>
+                  <DeleteIcon />
+                </IconButton>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Drawer>
+      <Main open={selectedNote !== null}>
+        <Container>
+          <Typography variant="h4" sx={{ mt: 2, mb: 4 }}>Notes</Typography>
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <MarkdownEditor
+            content={selectedNote?.content || ''}
+            setContent={(content: string) => setSelectedNote((prev: any) => prev ? { ...prev, content } : null)}
+            category={selectedNote?.category || ''}
+            setCategory={(category: string) => setSelectedNote((prev: any) => prev ? { ...prev, category } : null)}
+            tags={selectedNote?.tags || []}
+            setTags={(tags: string[]) => setSelectedNote((prev: any) => prev ? { ...prev, tags } : null)}
+          />
+          <MarkdownPreview content={selectedNote?.content || ''} />
+          <Divider sx={{ my: 2 }} />
+          <Button variant="contained" color="primary" onClick={handleSaveNote} sx={{ mb: 2 }}>Save</Button>
+        </Container>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+        <ConfirmDialog
+          open={confirmDialogOpen}
+          onClose={() => setConfirmDialogOpen(false)}
+          onConfirm={confirmDeleteNote}
+          title="Delete Note"
+          content="Are you sure you want to delete this note?"
         />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      </Main>
+    </>
   );
 }
+
+

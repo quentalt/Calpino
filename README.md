@@ -1,4 +1,24 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Welcome to my Calpino note-taking app! This app is designed to help you easily take and organize notes on your computer (soon mobile device). Here's a quick overview of the app's features:
+
+    Note creation: You can create new notes by clicking the "New Note" button or pressing the "N" key on your keyboard.
+
+    Note editing: To edit an existing note, simply click on it in the list of notes. You can also use the search bar to quickly find a specific note.
+
+
+    Note formatting: You can format your notes using basic text formatting tools, such as bold, italic, and underline. You can also insert images and attachments.
+
+
+Soon : 
+| Function           | Description                                                                                          |
+|--------------------|------------------------------------------------------------------------------------------------------|
+| ⚠️ Note organization | You can categorize your notes by creating folders and moving notes into them. To create a new folder, click the “New Folder” button or press the “F” key. |
+| ⚠️ Note sharing     | If you want to share a note with others, you can generate a unique link for it by clicking the “Share” button. This link can be copied and shared via email, messaging, or any other method. |
+| ⚠️ Note syncing     | Our app automatically syncs your notes across all your devices, so you can access them from anywhere. |
+| ⚠️ Note backup      | Our app automatically backs up your notes in local, so you don’t have to worry about losing your data. |
+
+
+
+That's it! We hope you find our app useful and intuitive. If you have any questions or feedback, please don't hesitate to contact us. Happy note-taking!
 
 ## Getting Started
 
